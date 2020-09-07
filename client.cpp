@@ -12,10 +12,11 @@ using namespace std;
 
 int main(int argc, char *argv[]){
     int pid = fork();
+    int MAX_SIZE = 0;
     if (pid == 0) {
-        // char* arg [] = {"-m", "1024", NULL};
-        char* arg [] = {"", NULL};
+        char* arg [] = {"-m", "256", NULL};
         execvp("./server", arg);
+        MAX_SIZE = atoi(arg[1]);
         delete arg;
     }
     FIFORequestChannel chan ("control", FIFORequestChannel::CLIENT_SIDE);
@@ -81,16 +82,17 @@ int main(int argc, char *argv[]){
                     chan.cread(&filelen, sizeof(__int64_t));
 
                     // open a file for writing to
-                    // string write_file = "home/osboxes/Classwork/CSCE313/PA1/received/" + filename;
-                    outfile.open(filename, ios::out | ios::binary);
+                    string write_file = "received/" + filename;
+                    outfile.open(write_file, ios::out | ios::binary);
 
-                    // iterate through file, taking MAX_MESSAGE bytes each time and writing to file
+                    // iterate through file, taking MAX_SIZE bytes each time and writing to file
                     __int64_t remaining = filelen;
                     __int64_t currByte = 0;
                     /*
                     * LAST WORKING HERE
                     */
                     int size = 0;
+                    gettimeofday(&start, NULL);
                     while (remaining > 0) {
                         if (remaining < MAX_MESSAGE) {
                             f->length = remaining;
@@ -112,7 +114,11 @@ int main(int argc, char *argv[]){
                         remaining -= MAX_MESSAGE;
                         outfile.write(receive, sizeof(receive));
                     }
+                    gettimeofday(&end, NULL);
+                    double time_taken;
                     outfile.close();
+                    time_taken = end.tv_usec - start.tv_usec;
+                    cout << "Time Taken to Get File: " << time_taken << " microseconds" << endl;
                     break;
                 }
                 /*
@@ -135,7 +141,7 @@ int main(int argc, char *argv[]){
                     }
 
                     closer = QUIT_MSG;
-                    chan.cwrite(&closer, sizeof(MESSAGE_TYPE));
+                    newChan.cwrite(&closer, sizeof(MESSAGE_TYPE));
                     break;
                 }
             }
@@ -151,7 +157,7 @@ int main(int argc, char *argv[]){
                     d->ecgno = atoi(optarg);
             }
         }
-        outfile.open("x1.csv");
+        outfile.open("received/x1.csv");
         gettimeofday(&start, NULL);
         ios_base::sync_with_stdio(false);
         // iterate through all the possible time values
